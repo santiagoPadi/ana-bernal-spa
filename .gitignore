@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Perfil persistente del scraper de Instagram (sesión logueada)
+scripts/.ig-session
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

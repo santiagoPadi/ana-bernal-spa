@@ -68,6 +68,39 @@ export const allImages = [
   '/images/instagram/ig-CZf0xJDs2Pk.jpg',
   '/images/instagram/ig-CYG9pJmrk0Y.jpg',
   '/images/instagram/ig-CTkjDEbLSHI.jpg',
+  // ── Nuevas (scrape Instagram @anabernal.moda) ──
+  '/images/instagram/ig-DSQO1KAkV4O.jpg',
+  '/images/instagram/ig-DX-oiwijB8V.jpg',
+  '/images/instagram/ig-DX-qmhsjPJq.jpg',
+  '/images/instagram/ig-DX-rbs5jERH.jpg',
+  '/images/instagram/ig-DXhNFh8ldBv.jpg',
+  '/images/instagram/ig-DYBOnn8jPyr.jpg',
+  '/images/instagram/ig-DYBRXvFDP9F.jpg',
+  '/images/instagram/ig-DYBScapDKQJ.jpg',
+  '/images/instagram/ig-DYFIdGuDsmE.jpg',
+  '/images/instagram/ig-DYFPka7jnJy.jpg',
+  '/images/instagram/ig-DYFZ6C-jm7W.jpg',
+  '/images/instagram/ig-DYFrD7jDhUi.jpg',
+  '/images/instagram/ig-DYH0X64Dvgw.jpg',
+  '/images/instagram/ig-DYHs052jmlw.jpg',
+  '/images/instagram/ig-DYIPHZ7kcOb.jpg',
+  '/images/instagram/ig-DYIYV_PGdZF.jpg',
+  '/images/instagram/ig-DYJJ6V3DPRW.jpg',
+  '/images/instagram/ig-DYJNp5_jPUf.jpg',
+  '/images/instagram/ig-DYKLZreDGsi.jpg',
+  '/images/instagram/ig-DYKSrvIDp7F.jpg',
+  '/images/instagram/ig-DYKtyAhjmth.jpg',
+  '/images/instagram/ig-DYLFgu-EXfx.jpg',
+  '/images/instagram/ig-DYN03PyDm36.jpg',
+  '/images/instagram/ig-DYNFOVmjm-o.jpg',
+  '/images/instagram/ig-DYNZaInjrDu.jpg',
+  '/images/instagram/ig-DYNnIeDGXLF.jpg',
+  '/images/instagram/ig-DYP3Z_yjR8I.jpg',
+  '/images/instagram/ig-DYPVAifjU9A.jpg',
+  '/images/instagram/ig-DYQZo_hEZQ8.jpg',
+  '/images/instagram/ig-DYYZkRIFi-w.jpg',
+  '/images/instagram/ig-DYYbx1VljW_.jpg',
+  '/images/instagram/ig-DYYcSKElpiX.jpg',
 ] as const
 
 // Hero section - glamorous/editorial shots
@@ -142,8 +175,14 @@ export const editorialImages = [
   '/images/instagram/ig-DBsB5CNMFjh.jpg',   // Taller KQM
 ]
 
-// Runway / fashion show images
+// Runway / fashion show images (fallback estático de la Pasarela cuando no hay
+// prendas curadas en Supabase). Refrescado con looks nuevos de Instagram.
 export const runwayImages = [
+  '/images/instagram/ig-DYQZo_hEZQ8.jpg',
+  '/images/instagram/ig-DYPVAifjU9A.jpg',
+  '/images/instagram/ig-DYP3Z_yjR8I.jpg',
+  '/images/instagram/ig-DYNnIeDGXLF.jpg',
+  '/images/instagram/ig-DYN03PyDm36.jpg',
   '/images/instagram/ig-DS5ym5mESc-.jpg',
   '/images/instagram/ig-DSvOWm5EYcy.jpg',
   '/images/instagram/ig-DSaSFcgjggX.jpg',
