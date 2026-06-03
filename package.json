@@ -13,6 +13,7 @@
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@react-three/postprocessing": "^3.0.4",
+    "@supabase/supabase-js": "^2.107.0",
     "@tailwindcss/vite": "^4.2.2",
     "@types/three": "^0.183.1",
     "framer-motion": "^12.38.0",

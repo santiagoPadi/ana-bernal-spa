@@ -69,7 +69,7 @@ export default function Gallery() {
               <motion.div
                 key={imageSrc}
                 variants={itemVariants}
-                className="group relative overflow-hidden rounded-lg border border-gold/10 aspect-square"
+                className="group relative overflow-hidden rounded-lg border border-gold/10 aspect-square transition-shadow duration-500 hover:shadow-[0_0_30px_rgba(197,162,88,0.15)]"
               >
                 <img
                   src={imageSrc}
