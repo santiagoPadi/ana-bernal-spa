@@ -121,120 +121,101 @@ async function main() {
   }
 
   console.log(`📱 Navigating to ${PROFILE_URL}`);
-  await page.goto(PROFILE_URL, { waitUntil: 'networkidle2', timeout: 30000 });
-
-  // Wait for posts to load
-  await page.waitForSelector('article a[href*="/p/"], main a[href*="/p/"]', {
-    timeout: 20000,
-  });
+  // domcontentloaded (NO networkidle2): Instagram nunca queda "idle" por su
+  // polling en segundo plano; networkidle2 tiraba timeout y cerraba todo.
+  await page.goto(PROFILE_URL, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  try {
+    await page.waitForSelector('a[href*="/p/"]', { timeout: 30000 });
+  } catch {
+    console.log('⚠️  No aparecieron posts en 30s (¿sesión/perfil?). Sigo igual.');
+  }
+  await new Promise((r) => setTimeout(r, 1500));
   console.log('✅ Profile loaded');
 
-  // Scroll to load all posts
-  let prevPostCount = 0;
-  let scrollAttempts = 0;
-  const maxScrollAttempts = 30;
-
-  while (scrollAttempts < maxScrollAttempts) {
-    const postLinks = await page.$$eval('article a[href*="/p/"]', links =>
-      [...new Set(links.map(a => a.href))]
+  // ── Recolección desde el GRID (sin entrar a cada post: más robusto) ──────
+  // De cada tile del grid sacamos {shortcode, mejor URL del srcset (1080/1440px)}.
+  const collected = new Map(); // shortcode -> url
+  let stale = 0;
+  for (let attempt = 0; attempt < 40 && collected.size < MAX_POSTS && stale < 4; attempt++) {
+    const batch = await page.$$eval('a[href*="/p/"]', (links) =>
+      links
+        .map((a) => {
+          const m = a.getAttribute('href').match(/\/p\/([^/]+)/);
+          if (!m) return null;
+          const img = a.querySelector('img');
+          if (!img) return null;
+          let url = img.src;
+          if (img.srcset) {
+            const best = img.srcset
+              .split(',')
+              .map((s) => s.trim().split(' '))
+              .sort((x, y) => (parseInt(y[1]) || 0) - (parseInt(x[1]) || 0))[0];
+            if (best) url = best[0];
+          }
+          return { code: m[1], url };
+        })
+        .filter(Boolean),
     );
-
-    console.log(`📜 Found ${postLinks.length} posts so far...`);
-
-    if (postLinks.length >= MAX_POSTS || postLinks.length === prevPostCount) {
-      break;
-    }
-
-    prevPostCount = postLinks.length;
+    const before = collected.size;
+    for (const { code, url } of batch) if (!collected.has(code)) collected.set(code, url);
+    console.log(`📜 ${collected.size} posts recolectados...`);
+    stale = collected.size === before ? stale + 1 : 0;
     await page.evaluate(() => window.scrollBy(0, window.innerHeight * 2));
-    await new Promise(r => setTimeout(r, SCROLL_DELAY));
-    scrollAttempts++;
+    await new Promise((r) => setTimeout(r, SCROLL_DELAY));
   }
 
-  // Collect all post URLs
-  const postUrls = await page.$$eval('article a[href*="/p/"]', links =>
-    [...new Set(links.map(a => a.href))]
+  console.log(
+    `\n📸 ${collected.size} posts en el grid. Descargando los que faltan...\n`,
   );
 
-  console.log(`\n📸 Found ${postUrls.length} total posts. Downloading images...\n`);
-
-  // Visit each post and download images
+  // ── Descarga con DEDUP: salta los ig-<code>.jpg que ya existen ───────────
   let downloaded = 0;
+  let skipped = 0;
   const manifest = [];
-
-  for (let i = 0; i < Math.min(postUrls.length, MAX_POSTS); i++) {
-    const postUrl = postUrls[i];
-    const shortcode = postUrl.match(/\/p\/([^/]+)/)?.[1] || `post-${i}`;
-
-    try {
-      await page.goto(postUrl, { waitUntil: 'networkidle2', timeout: 15000 });
-      await new Promise(r => setTimeout(r, 1000));
-
-      // Get all images in the post (carousel support)
-      const images = await page.evaluate(() => {
-        const imgs = document.querySelectorAll('article img[srcset], article img[src*="instagram"]');
-        return Array.from(imgs)
-          .filter(img => img.naturalWidth > 200)
-          .map(img => {
-            // Get highest resolution from srcset if available
-            if (img.srcset) {
-              const sources = img.srcset.split(',').map(s => {
-                const parts = s.trim().split(' ');
-                return { url: parts[0], width: parseInt(parts[1]) || 0 };
-              });
-              sources.sort((a, b) => b.width - a.width);
-              return sources[0]?.url || img.src;
-            }
-            return img.src;
-          });
-      });
-
-      // Download each image in the post
-      for (let j = 0; j < images.length; j++) {
-        const filename = images.length > 1
-          ? `${shortcode}_${j + 1}.jpg`
-          : `${shortcode}.jpg`;
-        const filepath = path.join(OUTPUT_DIR, filename);
-
-        try {
-          await downloadImage(images[j], filepath);
-          downloaded++;
-          manifest.push({ shortcode, filename, url: postUrl, index: j });
-          console.log(`  ✅ [${downloaded}] ${filename}`);
-        } catch (err) {
-          console.log(`  ❌ Failed: ${filename} - ${err.message}`);
-        }
-      }
-
-      // Also try to get caption/alt text for metadata
-      const caption = await page.evaluate(() => {
-        const el = document.querySelector('article h1, article span[dir="auto"]');
-        return el?.textContent?.substring(0, 200) || '';
-      });
-
-      if (manifest.length > 0) {
-        manifest[manifest.length - 1].caption = caption;
-      }
-
-    } catch (err) {
-      console.log(`  ⚠️  Skipped ${shortcode}: ${err.message}`);
+  const nuevos = [];
+  for (const [code, url] of collected) {
+    const filename = `ig-${code}.jpg`;
+    const filepath = path.join(OUTPUT_DIR, filename);
+    if (fs.existsSync(filepath)) {
+      skipped++;
+      continue;
     }
-
-    // Rate limiting
-    await new Promise(r => setTimeout(r, 500));
+    try {
+      await downloadImage(url, filepath);
+      downloaded++;
+      nuevos.push(filename);
+      manifest.push({ shortcode: code, filename, url });
+      console.log(`  ✅ [${downloaded}] ${filename}`);
+    } catch (err) {
+      console.log(`  ❌ ${filename}: ${err.message}`);
+    }
+    await new Promise((r) => setTimeout(r, 300));
   }
 
-  // Save manifest
   const manifestPath = path.join(OUTPUT_DIR, 'manifest.json');
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2));
 
-  console.log(`\n🎉 Done! Downloaded ${downloaded} images to ${OUTPUT_DIR}`);
-  console.log(`📋 Manifest saved to ${manifestPath}`);
+  console.log(
+    `\n🎉 Listo. Nuevas: ${downloaded} · Ya existían: ${skipped} · Total grid: ${collected.size}`,
+  );
+  if (nuevos.length) {
+    console.log('\n🆕 Archivos nuevos:');
+    nuevos.forEach((f) => console.log('   ' + f));
+    console.log('\n👉 Pasale esta lista a Claude (o decile "ya está").');
+  } else {
+    console.log('   No había posts nuevos respecto a los ya descargados.');
+  }
 
   await browser.close();
 }
 
-main().catch(err => {
-  console.error('Error:', err.message);
+main().catch(async (err) => {
+  console.error('\n❌ Error:', err && err.stack ? err.stack : err);
+  console.error('   (La ventana queda abierta para que veas en qué quedó.)');
+  try {
+    await waitForEnter('   Presioná ENTER para cerrar…');
+  } catch {
+    /* noop */
+  }
   process.exit(1);
 });
