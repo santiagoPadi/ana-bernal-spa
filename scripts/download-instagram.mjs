@@ -72,25 +72,52 @@ async function main() {
   const page = (await browser.pages())[0] ?? (await browser.newPage());
 
   // ── Login gate ──────────────────────────────────────────────────────────
-  // La 1ra vez: iniciás sesión a mano en la ventana que se abre. Después la
-  // sesión queda guardada en .ig-session/ y este paso se saltea solo.
+  // Fuente de verdad: la cookie `sessionid` (sólo existe si estás logueado).
+  // La 1ra vez te logueás a mano en la ventana; después queda guardada en
+  // .ig-session/ y este paso se saltea solo.
   console.log('🔓 Verificando sesión de Instagram...');
   await page.goto('https://www.instagram.com/', {
     waitUntil: 'networkidle2',
     timeout: 60000,
   });
-  const loggedIn = await page.evaluate(
-    () => !document.querySelector('input[name="username"]'),
-  );
-  if (!loggedIn) {
-    console.log(
-      '\n🔐 No hay sesión. Iniciá sesión en Instagram EN LA VENTANA que se abrió.',
-    );
-    await waitForEnter(
-      '   Cuando ya estés logueado, volvé a esta terminal y presioná ENTER…',
-    );
-  } else {
+
+  const hasSession = async () => {
+    // sessionid es httpOnly → no aparece en document.cookie; hay que usar la API
+    // de cookies. browser.cookies() en puppeteer v23+, page.cookies() en versiones
+    // anteriores.
+    let cookies = [];
+    try {
+      cookies =
+        typeof browser.cookies === 'function'
+          ? await browser.cookies()
+          : await page.cookies('https://www.instagram.com');
+    } catch {
+      cookies = await page.cookies('https://www.instagram.com');
+    }
+    return cookies.some((c) => c.name === 'sessionid' && c.value);
+  };
+
+  if (await hasSession()) {
     console.log('✅ Sesión activa (guardada de una corrida previa).');
+  } else {
+    console.log(
+      '\n🔐 No hay sesión iniciada. Iniciá sesión en Instagram EN LA VENTANA que se abrió.',
+    );
+    // Loop: no avanza hasta detectar la cookie sessionid de verdad.
+    // (no descarga nada hasta que estés logueado)
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      await waitForEnter(
+        '   Cuando YA estés logueado en la ventana, presioná ENTER aquí…',
+      );
+      if (await hasSession()) {
+        console.log('✅ Sesión detectada.');
+        break;
+      }
+      console.log(
+        '   ⚠️  Todavía no detecto la sesión. Asegurate de completar el login y reintentá.',
+      );
+    }
   }
 
   console.log(`📱 Navigating to ${PROFILE_URL}`);
