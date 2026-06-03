@@ -17,13 +17,27 @@ import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 import https from 'https';
+import readline from 'readline';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUTPUT_DIR = path.join(__dirname, '..', 'public', 'images', 'instagram');
+// Perfil dedicado y PERSISTENTE: te logueás a Instagram una sola vez aquí y la
+// sesión queda guardada para las próximas corridas. (gitignored)
+const PROFILE_DIR = path.join(__dirname, '.ig-session');
 const PROFILE_URL = 'https://www.instagram.com/anabernal.moda/';
 const MAX_POSTS = 60;
 const SCROLL_DELAY = 2000;
+
+function waitForEnter(message) {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    rl.question(`${message}\n`, () => {
+      rl.close();
+      resolve();
+    });
+  });
+}
 
 async function downloadImage(url, filepath) {
   return new Promise((resolve, reject) => {
@@ -43,22 +57,49 @@ async function main() {
   // Create output directory
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
-  console.log('🚀 Launching browser...');
+  console.log('🚀 Launching Chrome (perfil dedicado en scripts/.ig-session)...');
 
-  // Try to connect to user's Chrome or launch new instance
+  // Usa el Chrome instalado del sistema + un perfil persistente propio.
+  // No toca tu perfil normal de Chrome (no hace falta cerrar Chrome).
   const browser = await puppeteer.launch({
     headless: false,
-    defaultViewport: { width: 1280, height: 900 },
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+    channel: 'chrome', // usa tu Google Chrome instalado, no descarga Chromium
+    userDataDir: PROFILE_DIR,
+    defaultViewport: null,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--start-maximized'],
   });
 
-  const page = await browser.newPage();
+  const page = (await browser.pages())[0] ?? (await browser.newPage());
+
+  // ── Login gate ──────────────────────────────────────────────────────────
+  // La 1ra vez: iniciás sesión a mano en la ventana que se abre. Después la
+  // sesión queda guardada en .ig-session/ y este paso se saltea solo.
+  console.log('🔓 Verificando sesión de Instagram...');
+  await page.goto('https://www.instagram.com/', {
+    waitUntil: 'networkidle2',
+    timeout: 60000,
+  });
+  const loggedIn = await page.evaluate(
+    () => !document.querySelector('input[name="username"]'),
+  );
+  if (!loggedIn) {
+    console.log(
+      '\n🔐 No hay sesión. Iniciá sesión en Instagram EN LA VENTANA que se abrió.',
+    );
+    await waitForEnter(
+      '   Cuando ya estés logueado, volvé a esta terminal y presioná ENTER…',
+    );
+  } else {
+    console.log('✅ Sesión activa (guardada de una corrida previa).');
+  }
 
   console.log(`📱 Navigating to ${PROFILE_URL}`);
   await page.goto(PROFILE_URL, { waitUntil: 'networkidle2', timeout: 30000 });
 
   // Wait for posts to load
-  await page.waitForSelector('article img', { timeout: 15000 });
+  await page.waitForSelector('article a[href*="/p/"], main a[href*="/p/"]', {
+    timeout: 20000,
+  });
   console.log('✅ Profile loaded');
 
   // Scroll to load all posts
