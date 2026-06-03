@@ -105,8 +105,7 @@ async function main() {
     );
     // Loop: no avanza hasta detectar la cookie sessionid de verdad.
     // (no descarga nada hasta que estés logueado)
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
+    for (;;) {
       await waitForEnter(
         '   Cuando YA estés logueado en la ventana, presioná ENTER aquí…',
       );
