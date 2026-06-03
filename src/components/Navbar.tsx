@@ -8,6 +8,7 @@ const Navbar = () => {
   const navLinks = [
     { name: 'About', id: 'about' },
     { name: 'Collections', id: 'collections' },
+    { name: 'Runway', id: 'pasarela' },
     { name: 'Upcoming', id: 'upcoming' },
     { name: 'Achievements', id: 'achievements' },
     { name: 'Gallery', id: 'gallery' },

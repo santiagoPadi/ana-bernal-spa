@@ -9,6 +9,7 @@ const Hero = lazy(() => import('./sections/Hero'))
 const About = lazy(() => import('./sections/About'))
 const Philosophy = lazy(() => import('./sections/Philosophy'))
 const Collections = lazy(() => import('./sections/Collections'))
+const Pasarela = lazy(() => import('./sections/Pasarela'))
 const Achievements = lazy(() => import('./sections/Achievements'))
 const Gallery = lazy(() => import('./sections/Gallery'))
 const Contact = lazy(() => import('./sections/Contact'))
@@ -28,6 +29,7 @@ export default function App() {
             <About />
             <Philosophy />
             <Collections />
+            <Pasarela />
             <Upcoming />
             <Achievements />
             <Gallery />
