@@ -5,6 +5,9 @@ import { motion } from 'framer-motion'
 import Particles from '../components/Particles'
 import { heroImages } from '@/data/images'
 
+const isSpanish = navigator.language.toLowerCase().startsWith('es')
+const ctaLabel = isSpanish ? 'Ver todas las prendas' : 'Discover All the Pieces'
+
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
@@ -104,7 +107,7 @@ export default function Hero() {
           variants={containerVariants}
           initial="hidden"
           animate="visible"
-          className="flex w-full flex-col items-center gap-8"
+          className="flex w-full flex-col items-center gap-8 [@media(max-height:500px)]:gap-4"
         >
           {/* Label */}
           <motion.div variants={itemVariants} className="font-body">
@@ -136,6 +139,32 @@ export default function Hero() {
               La moda no es solo ropa; es lenguaje, actitud y significado.
             </p>
           </motion.div>
+
+          {/* CTA - Portafolio de pasarela */}
+          <motion.div variants={itemVariants}>
+            <motion.a
+              href="https://anabernal-portfolio.vercel.app/pasarela"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group relative inline-block overflow-hidden rounded-none border-2 border-gold px-6 py-3.5 font-body text-xs tracking-wide uppercase text-cream transition-all duration-500 hover:text-black animate-pulse-gold sm:px-10 sm:py-4 sm:text-sm sm:tracking-wider"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+            >
+              <div className="absolute inset-0 bg-gold origin-left transform scale-x-0 group-hover:scale-x-100 transition-transform duration-500" />
+              <span className="relative z-10 flex items-center justify-center gap-2 whitespace-nowrap sm:gap-3">
+                {ctaLabel}
+                <svg
+                  className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 sm:h-4 sm:w-4"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.5}
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25" />
+                </svg>
+              </span>
+            </motion.a>
+          </motion.div>
         </motion.div>
 
         {/* Scroll Indicator */}
@@ -144,7 +173,7 @@ export default function Hero() {
           variants={chevronVariants}
           initial="initial"
           animate="animate"
-          className="absolute bottom-12 flex flex-col items-center gap-2"
+          className="absolute bottom-12 flex flex-col items-center gap-2 [@media(max-height:480px)]:hidden md:[@media(max-height:600px)]:hidden"
         >
           <svg
             className="h-6 w-6 stroke-gold"
