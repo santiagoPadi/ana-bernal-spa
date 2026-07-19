@@ -99,6 +99,10 @@ body {
   animation: float 6s ease-in-out infinite;
 }
 
+.animate-pulse-gold {
+  animation: pulse-gold 3s ease-in-out infinite;
+}
+
 /* Gold gradient text */
 .gold-text {
   background: linear-gradient(135deg, #C5A258, #D4B76A, #A88B3D, #C5A258);
